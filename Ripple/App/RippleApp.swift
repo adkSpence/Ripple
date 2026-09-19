@@ -32,8 +32,8 @@ struct RippleApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(
-                viewModel: HydrationViewModel(
-                    drinkLoggingController: DrinkLoggingController(
+                bottleSetupViewModel: BottleSetupViewModel(
+                    bottleSetupController: BottleSetupController(
                         modelContext: sharedModelContainer.mainContext
                     )
                 )

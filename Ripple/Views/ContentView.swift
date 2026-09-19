@@ -3,16 +3,27 @@
 //  Ripple
 //
 
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
-    @State private var viewModel: HydrationViewModel
+    @Query(sort: \Bottle.name) private var bottles: [Bottle]
+    @State private var bottleSetupViewModel: BottleSetupViewModel
 
-    init(viewModel: HydrationViewModel) {
-        _viewModel = State(initialValue: viewModel)
+    init(bottleSetupViewModel: BottleSetupViewModel) {
+        _bottleSetupViewModel = State(initialValue: bottleSetupViewModel)
     }
 
     var body: some View {
-        Text(viewModel.title)
+        NavigationStack {
+            Group {
+                if let bottle = bottles.first {
+                    BottleSummaryView(bottle: bottle)
+                } else {
+                    FirstBottleSetupView(viewModel: bottleSetupViewModel)
+                }
+            }
+            .navigationTitle("Ripple")
+        }
     }
 }
