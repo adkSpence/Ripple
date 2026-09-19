@@ -9,6 +9,7 @@ import SwiftUI
 struct BottleSummaryView: View {
     let bottle: Bottle
     @Bindable var hydrationViewModel: HydrationViewModel
+    @Bindable var bottleTagViewModel: BottleTagViewModel
     @Bindable var scanner: NFCBottleScanner
 
     @Query private var entries: [DrinkEntry]
@@ -16,10 +17,12 @@ struct BottleSummaryView: View {
     init(
         bottle: Bottle,
         hydrationViewModel: HydrationViewModel,
+        bottleTagViewModel: BottleTagViewModel,
         scanner: NFCBottleScanner
     ) {
         self.bottle = bottle
         self.hydrationViewModel = hydrationViewModel
+        self.bottleTagViewModel = bottleTagViewModel
         self.scanner = scanner
 
         let startOfToday = Calendar.current.startOfDay(for: Date())
@@ -52,6 +55,33 @@ struct BottleSummaryView: View {
             Text("Owned by \(bottle.owner.name)")
                 .foregroundStyle(.secondary)
 
+            Button {
+                bottleTagViewModel.connectTag(to: bottle)
+            } label: {
+                Label(
+                    bottleTagViewModel.isWriting
+                        ? "Connecting…"
+                        : bottle.isTagConnected
+                            ? "Replace NFC Tag"
+                            : "Connect NFC Tag",
+                    systemImage: "sensor.tag.radiowaves.forward"
+                )
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .disabled(bottleTagViewModel.isWriting || scanner.isScanning)
+
+            if let message = bottleTagViewModel.confirmationMessage {
+                Label(message, systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+            }
+
+            if let error = bottleTagViewModel.errorMessage {
+                Text(error)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+
             Divider()
 
             Text("\(totalToday) ml today")
@@ -77,7 +107,7 @@ struct BottleSummaryView: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-            .disabled(scanner.isScanning)
+            .disabled(scanner.isScanning || bottleTagViewModel.isWriting)
 
             Button("Log Bottle Manually") {
                 hydrationViewModel.logFullBottle(bottle)
@@ -95,16 +125,6 @@ struct BottleSummaryView: View {
                     .multilineTextAlignment(.center)
             }
 
-            VStack(spacing: 4) {
-                Text("Tag value")
-                    .font(.caption.bold())
-                Text(BottleTag(bottleID: bottle.id).url.absoluteString)
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.top, 8)
         }
         .padding()
     }

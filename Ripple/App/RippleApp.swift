@@ -41,6 +41,12 @@ struct RippleApp: App {
                     drinkLoggingController: DrinkLoggingController(
                         modelContext: sharedModelContainer.mainContext
                     )
+                ),
+                bottleTagViewModel: BottleTagViewModel(
+                    writer: NFCBottleWriter(),
+                    controller: BottleTagController(
+                        modelContext: sharedModelContainer.mainContext
+                    )
                 )
             )
         }

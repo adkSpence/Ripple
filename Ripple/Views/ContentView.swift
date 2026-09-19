@@ -10,14 +10,17 @@ struct ContentView: View {
     @Query(sort: \Bottle.name) private var bottles: [Bottle]
     @State private var bottleSetupViewModel: BottleSetupViewModel
     @State private var hydrationViewModel: HydrationViewModel
+    @State private var bottleTagViewModel: BottleTagViewModel
     @State private var scanner = NFCBottleScanner()
 
     init(
         bottleSetupViewModel: BottleSetupViewModel,
-        hydrationViewModel: HydrationViewModel
+        hydrationViewModel: HydrationViewModel,
+        bottleTagViewModel: BottleTagViewModel
     ) {
         _bottleSetupViewModel = State(initialValue: bottleSetupViewModel)
         _hydrationViewModel = State(initialValue: hydrationViewModel)
+        _bottleTagViewModel = State(initialValue: bottleTagViewModel)
     }
 
     var body: some View {
@@ -27,6 +30,7 @@ struct ContentView: View {
                     BottleSummaryView(
                         bottle: bottle,
                         hydrationViewModel: hydrationViewModel,
+                        bottleTagViewModel: bottleTagViewModel,
                         scanner: scanner
                     )
                 } else {
