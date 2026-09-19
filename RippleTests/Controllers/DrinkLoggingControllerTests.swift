@@ -10,6 +10,32 @@ import Testing
 
 @MainActor
 struct DrinkLoggingControllerTests {
+    @Test func loggingByBottleIdentifierFindsAndPersistsTheBottle() throws {
+        let container = try makeTestContainer()
+        let context = container.mainContext
+        let user = User(name: "Astro")
+        let bottle = Bottle(name: "Daily Bottle", capacityML: 750, owner: user)
+        context.insert(user)
+        context.insert(bottle)
+        try context.save()
+
+        let controller = DrinkLoggingController(modelContext: context)
+        let entry = try controller.logFullBottle(withID: bottle.id)
+
+        #expect(entry.bottle.id == bottle.id)
+        #expect(entry.amountML == 750)
+    }
+
+    @Test func unknownBottleIdentifierIsRejected() throws {
+        let container = try makeTestContainer()
+        let controller = DrinkLoggingController(
+            modelContext: container.mainContext
+        )
+
+        #expect(throws: DrinkLoggingError.bottleNotFound) {
+            try controller.logFullBottle(withID: UUID())
+        }
+    }
     @Test
     func loggingAFullBottlePersistsItsCapacityAndRelationships() throws {
         let container = try makeTestContainer()

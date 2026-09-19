@@ -36,6 +36,11 @@ struct RippleApp: App {
                     bottleSetupController: BottleSetupController(
                         modelContext: sharedModelContainer.mainContext
                     )
+                ),
+                hydrationViewModel: HydrationViewModel(
+                    drinkLoggingController: DrinkLoggingController(
+                        modelContext: sharedModelContainer.mainContext
+                    )
                 )
             )
         }

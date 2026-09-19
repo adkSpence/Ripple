@@ -8,11 +8,14 @@ import SwiftData
 
 enum DrinkLoggingError: LocalizedError, Equatable {
     case invalidBottleCapacity
+    case bottleNotFound
 
     var errorDescription: String? {
         switch self {
         case .invalidBottleCapacity:
             "Bottle capacity must be greater than zero."
+        case .bottleNotFound:
+            "This tag is not linked to a bottle in Ripple."
         }
     }
 }
@@ -44,5 +47,21 @@ final class DrinkLoggingController {
         try modelContext.save()
 
         return entry
+    }
+
+    @discardableResult
+    func logFullBottle(
+        withID bottleID: UUID,
+        at timestamp: Date = Date()
+    ) throws -> DrinkEntry {
+        let descriptor = FetchDescriptor<Bottle>(
+            predicate: #Predicate { $0.id == bottleID }
+        )
+
+        guard let bottle = try modelContext.fetch(descriptor).first else {
+            throw DrinkLoggingError.bottleNotFound
+        }
+
+        return try logFullBottle(bottle, at: timestamp)
     }
 }
