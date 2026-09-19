@@ -1,8 +1,3 @@
-//
-//  BottleSummaryView.swift
-//  Ripple
-//
-
 import SwiftData
 import SwiftUI
 
@@ -10,122 +5,117 @@ struct BottleSummaryView: View {
     let bottle: Bottle
     @Bindable var hydrationViewModel: HydrationViewModel
     @Bindable var bottleTagViewModel: BottleTagViewModel
+    @Bindable var hydrationGoalViewModel: HydrationGoalViewModel
     @Bindable var scanner: NFCBottleScanner
 
-    @Query private var entries: [DrinkEntry]
+    @Query(sort: \DrinkEntry.timestamp, order: .reverse) private var allEntries: [DrinkEntry]
+    @State private var isShowingGoal = false
 
-    init(
-        bottle: Bottle,
-        hydrationViewModel: HydrationViewModel,
-        bottleTagViewModel: BottleTagViewModel,
-        scanner: NFCBottleScanner
-    ) {
-        self.bottle = bottle
-        self.hydrationViewModel = hydrationViewModel
-        self.bottleTagViewModel = bottleTagViewModel
-        self.scanner = scanner
-
-        let startOfToday = Calendar.current.startOfDay(for: Date())
-        let bottleID = bottle.id
-        _entries = Query(
-            filter: #Predicate<DrinkEntry> {
-                $0.timestamp >= startOfToday && $0.bottle.id == bottleID
-            },
-            sort: \DrinkEntry.timestamp,
-            order: .reverse
-        )
+    private var entries: [DrinkEntry] {
+        allEntries.filter { $0.bottle.owner.id == bottle.owner.id }
     }
 
-    private var totalToday: Int {
-        entries.reduce(0) { $0 + $1.amountML }
+    private var progress: HydrationProgress {
+        HydrationProgress.calculate(entries: entries, goalML: bottle.owner.dailyGoalML)
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "waterbottle.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.blue)
+        ScrollView {
+            VStack(spacing: 22) {
+                header
 
-            Text(bottle.name)
-                .font(.title2.bold())
-
-            Text("\(bottle.capacityML) ml")
-                .font(.headline)
-
-            Text("Owned by \(bottle.owner.name)")
-                .foregroundStyle(.secondary)
-
-            Button {
-                bottleTagViewModel.connectTag(to: bottle)
-            } label: {
-                Label(
-                    bottleTagViewModel.isWriting
-                        ? "Connecting…"
-                        : bottle.isTagConnected
-                            ? "Replace NFC Tag"
-                            : "Connect NFC Tag",
-                    systemImage: "sensor.tag.radiowaves.forward"
+                WaterProgressView(
+                    progress: progress.fractionComplete,
+                    amountML: progress.amountTodayML,
+                    goalML: progress.goalML,
+                    animationTrigger: hydrationViewModel.lastLoggedEntry?.id
                 )
-                .frame(maxWidth: .infinity)
+
+                Text(progress.isComplete
+                     ? "Daily goal complete"
+                     : "\(progress.remainingML.formatted()) ml remaining")
+                    .font(.headline)
+                    .foregroundStyle(progress.isComplete ? .green : .secondary)
+
+                StreakView(progress: progress)
+                actionButtons
+                feedback
             }
-            .buttonStyle(.bordered)
-            .disabled(bottleTagViewModel.isWriting || scanner.isScanning)
+            .padding()
+        }
+        .background(LinearGradient(
+            colors: [.cyan.opacity(0.08), .blue.opacity(0.03), .clear],
+            startPoint: .top,
+            endPoint: .bottom
+        ))
+        .sheet(isPresented: $isShowingGoal) {
+            GoalSettingsView(user: bottle.owner, viewModel: hydrationGoalViewModel)
+        }
+        .sensoryFeedback(.success, trigger: progress.isComplete)
+    }
 
-            if let message = bottleTagViewModel.confirmationMessage {
-                Label(message, systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+    private var header: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Hello, \(bottle.owner.name)").font(.title2.bold())
+                Text("\(bottle.name) · \(bottle.capacityML) ml")
+                    .foregroundStyle(.secondary)
             }
-
-            if let error = bottleTagViewModel.errorMessage {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
+            Spacer()
+            Button {
+                hydrationGoalViewModel.prepare(currentGoalML: bottle.owner.dailyGoalML)
+                isShowingGoal = true
+            } label: {
+                Image(systemName: "target").font(.title2)
             }
+            .accessibilityLabel("Set daily goal")
+        }
+    }
 
-            Divider()
-
-            Text("\(totalToday) ml today")
-                .font(.title.bold())
-
-            Text("\(entries.count) bottle\(entries.count == 1 ? "" : "s") logged")
-                .foregroundStyle(.secondary)
-
+    private var actionButtons: some View {
+        VStack(spacing: 12) {
             Button {
                 scanner.beginScan { result in
                     switch result {
-                    case .success(let url):
-                        hydrationViewModel.logScannedTag(url: url)
-                    case .failure(let error):
-                        hydrationViewModel.showScanError(error)
+                    case .success(let url): hydrationViewModel.logScannedTag(url: url)
+                    case .failure(let error): hydrationViewModel.showScanError(error)
                     }
                 }
             } label: {
-                Label(
-                    scanner.isScanning ? "Scanning…" : "Scan Bottle Tag",
-                    systemImage: "wave.3.right"
-                )
-                .frame(maxWidth: .infinity)
+                Label(scanner.isScanning ? "Scanning…" : "Scan Bottle Tag", systemImage: "wave.3.right")
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .disabled(scanner.isScanning || bottleTagViewModel.isWriting)
 
-            Button("Log Bottle Manually") {
-                hydrationViewModel.logFullBottle(bottle)
-            }
-            .buttonStyle(.bordered)
+            HStack {
+                Button("Log Manually") { hydrationViewModel.logFullBottle(bottle) }
+                    .buttonStyle(.bordered)
 
-            if let message = hydrationViewModel.confirmationMessage {
-                Label(message, systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                Button {
+                    bottleTagViewModel.connectTag(to: bottle)
+                } label: {
+                    Text(bottleTagViewModel.isWriting
+                         ? "Connecting…"
+                         : bottle.isTagConnected ? "Replace Tag" : "Connect Tag")
+                }
+                .buttonStyle(.bordered)
+                .disabled(bottleTagViewModel.isWriting || scanner.isScanning)
             }
-
-            if let error = hydrationViewModel.errorMessage {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-            }
-
         }
-        .padding()
+    }
+
+    @ViewBuilder
+    private var feedback: some View {
+        if let message = hydrationViewModel.confirmationMessage {
+            Label(message, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+        }
+        if let message = bottleTagViewModel.confirmationMessage {
+            Label(message, systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+        }
+        if let error = hydrationViewModel.errorMessage ?? bottleTagViewModel.errorMessage {
+            Text(error).foregroundStyle(.red).multilineTextAlignment(.center)
+        }
     }
 }

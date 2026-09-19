@@ -47,6 +47,11 @@ struct RippleApp: App {
                     controller: BottleTagController(
                         modelContext: sharedModelContainer.mainContext
                     )
+                ),
+                hydrationGoalViewModel: HydrationGoalViewModel(
+                    controller: HydrationGoalController(
+                        modelContext: sharedModelContainer.mainContext
+                    )
                 )
             )
         }
