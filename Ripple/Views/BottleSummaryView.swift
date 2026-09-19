@@ -57,7 +57,7 @@ struct BottleSummaryView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Hello, \(bottle.owner.name)").font(.title2.bold())
+                Text("Today").font(.title2.bold())
                 Text("\(bottle.name) · \(bottle.capacityML) ml")
                     .foregroundStyle(.secondary)
             }

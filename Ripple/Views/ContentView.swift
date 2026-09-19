@@ -8,19 +8,19 @@ import SwiftUI
 
 struct ContentView: View {
     @Query(sort: \Bottle.name) private var bottles: [Bottle]
-    @State private var bottleSetupViewModel: BottleSetupViewModel
+    @State private var bottleRegistrationViewModel: BottleRegistrationViewModel
     @State private var hydrationViewModel: HydrationViewModel
     @State private var bottleTagViewModel: BottleTagViewModel
     @State private var hydrationGoalViewModel: HydrationGoalViewModel
     @State private var scanner = NFCBottleScanner()
 
     init(
-        bottleSetupViewModel: BottleSetupViewModel,
+        bottleRegistrationViewModel: BottleRegistrationViewModel,
         hydrationViewModel: HydrationViewModel,
         bottleTagViewModel: BottleTagViewModel,
         hydrationGoalViewModel: HydrationGoalViewModel
     ) {
-        _bottleSetupViewModel = State(initialValue: bottleSetupViewModel)
+        _bottleRegistrationViewModel = State(initialValue: bottleRegistrationViewModel)
         _hydrationViewModel = State(initialValue: hydrationViewModel)
         _bottleTagViewModel = State(initialValue: bottleTagViewModel)
         _hydrationGoalViewModel = State(initialValue: hydrationGoalViewModel)
@@ -38,10 +38,10 @@ struct ContentView: View {
                         scanner: scanner
                     )
                 } else {
-                    FirstBottleSetupView(viewModel: bottleSetupViewModel)
+                    BottleOnboardingView(viewModel: bottleRegistrationViewModel)
                 }
             }
-            .navigationTitle("Ripple")
+            .navigationTitle(bottles.isEmpty ? "" : "Ripple")
         }
     }
 }

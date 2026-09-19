@@ -33,9 +33,11 @@ final class BottleSetupController {
 
     @discardableResult
     func createFirstBottle(
+        bottleID: UUID = UUID(),
         userName: String,
         bottleName: String,
-        capacityML: Int
+        capacityML: Int,
+        isTagConnected: Bool = false
     ) throws -> Bottle {
         let trimmedUserName = userName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedBottleName = bottleName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -54,9 +56,11 @@ final class BottleSetupController {
 
         let user = User(name: trimmedUserName)
         let bottle = Bottle(
+            id: bottleID,
             name: trimmedBottleName,
             capacityML: capacityML,
-            owner: user
+            owner: user,
+            isTagConnected: isTagConnected
         )
 
         modelContext.insert(user)

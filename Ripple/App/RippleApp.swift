@@ -32,8 +32,10 @@ struct RippleApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(
-                bottleSetupViewModel: BottleSetupViewModel(
-                    bottleSetupController: BottleSetupController(
+                bottleRegistrationViewModel: BottleRegistrationViewModel(
+                    detector: NFCBottleTagDetector(),
+                    writer: NFCBottleWriter(),
+                    controller: BottleSetupController(
                         modelContext: sharedModelContainer.mainContext
                     )
                 ),
